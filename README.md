@@ -84,19 +84,32 @@ In standard clinical workflows, histopathology slides are arbitrarily rotated an
 | **Custom G-CNN** (Phase 2) | Discrete $D_4$ | **0.9439** | 0.00% | **4.82%** | **0.00%** | **4.82%** | Partial (Grid Limits) |
 | **ESCNN Steerable** (Phase 3) | Harmonic $D_4$ | 0.9315 | 0.00% | **0.00%** | **0.00%** | **0.00%** | Equivariant |
 
-**Analysis:** The standard CNN suffers from a dangerous lack of geometric memory (~11% fluctuation). The Custom G-CNN successfully forced stability across the $180^\circ$ and reflection subgroups (0.00% error), but revealed the limitations of discrete square grids with a 4.82% error at $90^\circ$. By employing continuous harmonics, the ESCNN mathematically guarantees a full-manifold 0.00% Flip Rate while maintaining peak predictive power.
+**Analysis:** The standard CNN suffers from a dangerous lack of geometric memory (~11% fluctuation). The Custom G-CNN successfully forced stability across the $180^\circ$ and reflection subgroups (0.00% flip error), but revealed the limitations of discrete square grids with a 4.82% flip error at $90^\circ$. By employing continuous harmonics, the ESCNN mathematically guarantees a full-manifold 0.00% Flip Rate while maintaining peak predictive power.
 
-### 4.2 Clinical Sensitivity Stability (25% Safety Threshold)
-To simulate a real-world triage environment, we set a strict **25% Safety Threshold** (if the network is even 25% confident a biopsy is malignant, it flags it for human review). We tracked how many true cancers were missed (False Negatives) across different physical slide orientations.
+### 4.2 Clinical Sensitivity & Specificity (25% Safety Threshold)
 
-| Slide Orientation | ResNet-18 Missed Cancers | Custom G-CNN Missed | ESCNN Missed Cancers |
+To simulate a real-world triage environment, we set a strict **25% Safety Threshold** (if the network is even 25% confident a biopsy is malignant, it flags it for human review). There are exactly **16,377 positive cancer cases** in the test set.
+
+**A. The Baseline Clinical Profile (Standard 0° Slides)**
+Before introducing physical rotations, we evaluated the baseline trade-off between Sensitivity (catching cancer) and Specificity (correctly clearing healthy patients) on standard, un-rotated slides:
+
+| Metric | ResNet-18 | Custom G-CNN | ESCNN Steerable |
 | :--- | :--- | :--- | :--- |
-| **0° (Standard Anchor)** | 3,291 cases | 3,784 cases (Locked Base) | **3,053 cases** (Locked Base) |
-| **90° Rotation** | 4,164 cases *(+873 errors)* | 4,091 cases *(+307 errors)* | **3,053 cases** (Perfect) |
-| **180° Rotation** | 4,505 cases *(+1,214 errors)*| 3,784 cases (Perfect) | **3,053 cases** (Perfect) |
-| **270° Reflection** | 4,138 cases *(+847 errors)* | 4,091 cases *(+307 errors)* | **3,053 cases** (Perfect) |
+| **Recall (Sensitivity)** | 79.90% | 76.89% | **81.36%** (Superior) |
+| **Specificity** | 92.79% | **96.71%** | 90.85% (Highly Viable) |
+| **Missed Cancers (FN)** | 3,291 / 16,377 | 3,784 / 16,377 | **3,053 / 16,377** |
 
-**Analysis:** This is the most critical clinical finding. If a technician accidentally inserts a slide upside-down ($180^\circ$), the ResNet-18's sensitivity collapses, resulting in **1,214 additional missed cancers**. The Custom G-CNN stabilized the $180^\circ$ subgroup entirely but fluctuated by 307 cases at $90^\circ$. The ESCNN Steerable Network permanently locked its False Negatives across all 8 states, outperforming both prior models' best-case scenarios while mathematically guaranteeing safety.
+**B. The Rotational Crash (Diagnostic Fluctuation)**
+We then rotated the slides across the $D_4$ manifold to simulate real-world microscope handling. We tracked how the Recall and False Negatives fluctuated based entirely on physical orientation.
+
+| Slide Orientation | ResNet-18 (Recall / Missed) | Custom G-CNN (Recall / Missed) | ESCNN Steerable (Recall / Missed) |
+| :--- | :--- | :--- | :--- |
+| **0° (Standard Anchor)** | 79.90% *(3,291 / 16,377)* | 76.89% *(3,784 / 16,377)* | **81.36%** *(3,053 / 16,377)* |
+| **90° Rotation** | 74.57% *(4,164 / 16,377)* | 75.02% *(4,091 / 16,377)* | **81.36%** *(3,053 / 16,377)* |
+| **180° Rotation** | 72.49% *(4,505 / 16,377)* | 76.89% *(3,784 / 16,377)* | **81.36%** *(3,053 / 16,377)* |
+| **270° Reflection** | 74.73% *(4,138 / 16,377)* | 75.02% *(4,091 / 16,377)* | **81.36%** *(3,053 / 16,377)* |
+
+**Analysis:** The ESCNN demonstrates the ultimate clinical profile. At the baseline, it achieves the highest absolute Recall while successfully maintaining a highly viable >90% Specificity. However, the most critical finding is the rotational fragility of standard models. If a technician accidentally inserts a slide upside-down ($180^\circ$), the ResNet-18's recall collapses to **72.49%**, resulting in **1,214 additional missed cancers**. The ESCNN Steerable Network mathematically guarantees safety, permanently locking its superior recall and specificity across all 8 geometric states.
 
 ### 4.3 High-Recall Calibration
 Finally, we tested the absolute confidence of the models by searching for the clinical probability threshold required to guarantee high Recall rates on standard, un-rotated slides.
@@ -105,3 +118,16 @@ Finally, we tested the absolute confidence of the models by searching for the cl
 * **ESCNN Steerable (Targeting 85% Recall):** Maintained strong, defined class separability. The network achieved a highly reliable 85% guaranteed Recall rate with a highly usable **15.45% probability threshold**.
 
 **Analysis:** Hardcoding geometric priors does not just prevent rotational errors; it fundamentally improves feature separability and model calibration. The Steerable network retains highly functional probability scores even under heavily constrained, 5-epoch training loops, whereas standard CNNs suffer from total probability collapse when pushed to clinical sensitivity targets.
+
+## 8. Conclusion & The Next Frontier
+
+This repository demonstrates a fundamental truth in medical computer vision: **predictive power means nothing without geometric stability.** By auditing a standard ResNet-18 across the $D_4$ manifold, we exposed a critical architectural flaw. The standard CNN's lack of intrinsic geometric memory caused it to miss over 1,200 additional cancers simply because a biopsy slide was physically rotated. 
+
+By systematically upgrading the architecture from discrete pixel grids to a continuous Steerable Network (ESCNN), we proved that mathematically enforcing geometric transformations entirely resolves this vulnerability. The ESCNN achieved a mathematically guaranteed **0.00% Flip Rate** while locking in superior clinical sensitivity (81.36%) and specificity (90.85%) across the entire spatial manifold.
+
+### Beyond Convolutions: The Vision Transformer (ViT)
+While continuous steerable networks represent the absolute pinnacle of *convolutional* safety, convolutions are still fundamentally restricted by their local receptive fields. Clinical histopathology often requires understanding global tissue context; for example, how a cluster of malignant cells in one corner of a slide relates to the surrounding stroma in another.
+
+To break past the limitations of local convolutions, our team implemented a **Vision Transformer (ViT)** architecture to replace the sliding window paradigm entirely. By utilizing global self-attention, the ViT can capture long-range biological dependencies from the very first layer. 
+
+Early clinical benchmarking indicates that our ViT architecture strictly outperforms both the standard ResNet and the $D_4$ Steerable Network. **We will be publishing the complete ViT codebase, pre-trained weights, and the corresponding full-manifold robustness audits directly to this repository upon final validation.** Watch this repository for the upcoming release!
