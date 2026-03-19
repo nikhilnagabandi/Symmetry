@@ -121,12 +121,16 @@ Finally, we tested the absolute confidence of the models by searching for the cl
 
 ## 8. Conclusion & The Next Frontier
 
-This repository demonstrates a fundamental truth in medical computer vision: **predictive power means nothing without geometric stability.** By auditing a standard ResNet-18 across the $D_4$ manifold, we exposed a critical architectural flaw. The standard CNN's lack of intrinsic geometric memory caused it to miss over 1,200 additional cancers simply because a biopsy slide was physically rotated. 
+This repository demonstrates a fundamental truth in computational pathology: **predictive power means nothing without geometric stability.** By auditing a standard ResNet-18 across the $D_4$ manifold, we exposed a critical architectural flaw. The standard CNN's lack of intrinsic geometric memory caused it to miss over 1,200 additional cancers simply because a biopsy slide was physically rotated, rendering standard architectures clinically unsafe for deployable triage. 
 
-By systematically upgrading the architecture from discrete pixel grids to a continuous Steerable Network (ESCNN), we proved that mathematically enforcing geometric transformations entirely resolves this vulnerability. The ESCNN achieved a mathematically guaranteed **0.00% Flip Rate** while locking in superior clinical sensitivity (81.36%) and specificity (90.85%) across the entire spatial manifold.
+### The Evolution of Geometric Priors & Data Efficiency
+By systematically upgrading the architecture, we isolated the exact mathematical bottlenecks causing this rotational fragility:
+* **The Discrete Grid Limitation:** Our intermediate Custom 5-Layer G-CNN successfully stabilized 180° rotations and reflections (achieving a 0.00% flip rate for those subgroups). However, it still exhibited a ~4.8% diagnostic fluctuation at 90° angles. This perfectly highlighted the fundamental limitation of applying discrete $D_4$ group operations to square $Z^2$ pixel grids, where 90° rotations inevitably introduce subtle interpolation artifacts.
+* **The Continuous Solution:** By upgrading to a continuous Steerable Network (ESCNN), we bypassed the discrete grid entirely. Using continuous circular harmonics, the ESCNN achieved a mathematically guaranteed **0.00% Flip Rate** across the entire spatial manifold. 
+* **The 5-Epoch Advantage:** Crucially, these results were achieved under a highly constrained 5-epoch training loop. Standard CNNs must brute-force learn rotational invariance by observing thousands of augmented examples over massive training cycles. By contrast, equivariant models inherently possess this geometric knowledge at initialization. Locking in superior clinical sensitivity (81.36%) and specificity (90.85%) in just 5 epochs proves that hardcoding structural symmetries produces models that are not only mathematically safer, but radically more data-efficient. 
 
-### Beyond Convolutions: The Vision Transformer (ViT)
-While continuous steerable networks represent the absolute pinnacle of *convolutional* safety, convolutions are still fundamentally restricted by their local receptive fields. Clinical histopathology often requires understanding global tissue context; for example, how a cluster of malignant cells in one corner of a slide relates to the surrounding stroma in another.
+### Beyond CNN: The Vision Transformer (ViT)
+While continuous steerable networks represent the absolute pinnacle of *convolutional* safety, convolutions are still fundamentally restricted by their local receptive fields. Clinical histopathology often requires understanding global tissue context—for example, how a cluster of malignant cells in one corner of a slide relates to the surrounding stroma in another.
 
 To break past the limitations of local convolutions, our team implemented a **Vision Transformer (ViT)** architecture to replace the sliding window paradigm entirely. By utilizing global self-attention, the ViT can capture long-range biological dependencies from the very first layer. 
 
