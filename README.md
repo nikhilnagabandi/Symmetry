@@ -80,9 +80,9 @@ In standard clinical workflows, histopathology slides are arbitrarily rotated an
 
 | Network Architecture | Symmetry Prior | Peak AUC | 0° Anchor | 90° Rot | 180° Rot | 270° Flip | Manifold Stability |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **ResNet-18** (Phase 1) | None | 0.9317 | 0.00% | 10.96% | 11.30% | 10.17% | ❌ Unstable |
-| **Custom G-CNN** (Phase 2) | Discrete $D_4$ | **0.9439** | 0.00% | **4.82%** | **0.00%** | **4.82%** | ⚠️ Partial (Grid Limits) |
-| **ESCNN Steerable** (Phase 3) | Harmonic $D_4$ | 0.9315 | 0.00% | **0.00%** | **0.00%** | **0.00%** | ✅ Equivariant |
+| **ResNet-18** (Phase 1) | None | 0.9317 | 0.00% | 10.96% | 11.30% | 10.17% | Unstable |
+| **Custom G-CNN** (Phase 2) | Discrete $D_4$ | **0.9439** | 0.00% | **4.82%** | **0.00%** | **4.82%** | Partial (Grid Limits) |
+| **ESCNN Steerable** (Phase 3) | Harmonic $D_4$ | 0.9315 | 0.00% | **0.00%** | **0.00%** | **0.00%** | Equivariant |
 
 **Analysis:** The standard CNN suffers from a dangerous lack of geometric memory (~11% fluctuation). The Custom G-CNN successfully forced stability across the $180^\circ$ and reflection subgroups (0.00% error), but revealed the limitations of discrete square grids with a 4.82% error at $90^\circ$. By employing continuous harmonics, the ESCNN mathematically guarantees a full-manifold 0.00% Flip Rate while maintaining peak predictive power.
 
