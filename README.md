@@ -8,7 +8,9 @@
 
 While standard Convolutional Neural Networks (CNNs) like ResNet achieve high baseline accuracy on medical imaging tasks, they suffer from a fundamental architectural flaw: **a lack of intrinsic geometric memory**. In clinical histopathology, where tissue slides are arbitrarily rotated or flipped under a microscope, standard CNNs exhibit dangerous diagnostic instability, frequently altering their predictions based purely on spatial orientation.
 
-This repository explores the intersection of geometric deep learning and clinical safety by integrating group theory directly into neural network architectures. To definitively isolate and solve this vulnerability on the PatchCamelyon (PCam) metastasis dataset, we structured this research in three evolutionary phases:
+This repository explores the intersection of geometric deep learning and clinical safety by integrating group theory directly into neural network architectures. In this project, we aim to isolate and solve this vulnerability by working on the PatchCamelyon (PCam) metastasis dataset, which contains over 220,000 histopathology images from lymph node biopsies with a pre-determined train/test split.
+
+We structured this research in three evolutionary phases:
 
 1. **The Baseline (ResNet-18):** Established a standard $Z^2$ Euclidean CNN to expose the hidden topological vulnerabilities present in widely accepted medical architectures.
 2. **The Intermediate Breakthrough (Custom G-CNN):** Built a 5-layer network from scratch in pure PyTorch, engineering custom "Lifting Layers" to mathematically map standard image pixels into the discrete $D_4$ Dihedral Group. 
@@ -49,10 +51,18 @@ However, rotating a discrete square grid by $90^\circ$ or $270^\circ$ introduces
 
 To definitively prove the clinical necessity of geometric priors, we approached the problem in three distinct evolutionary phases. This progression allowed us to isolate the exact mathematical bottlenecks in standard computer vision.
 
-### Phase 1: The Baseline (ResNet-18)
-* **Architecture:** Standard $Z^2$ Euclidean Convolutions.
-* **The Goal:** Establish a high-performing traditional baseline using a widely accepted clinical architecture.
-* **The Result:** The model achieved a high AUC (~0.93) on perfectly oriented slides, but catastrophically failed the topological audit. Because it lacked geometric memory, it suffered from an ~11% diagnostic fluctuation across different physical orientations, making it clinically unsafe.
+### Phase 1a: The Baseline (ResNet-18/50 based CNN models)
+
+- **Architecture:** A ResNet residual network augmented with two additional fully connected layers.  
+- **The Goal:** Establish a strong, clinically relevant baseline using a widely adopted CNN architecture on the PCam metastasis dataset.  
+- **The Result:** The model achieved strong classification performance (AUC ~0.93; F1 ~0.82) on standard validation data. However, under rotational perturbations it exhibited a critical failure mode: predictions were not invariant to orientation, leading to an ~11% diagnostic fluctuation across equivalent inputs. This exposes a fundamental lack of geometric robustness, rendering the model clinically unreliable despite high headline accuracy.  
+
+### Phase 1b: Test-Time Augmentation (TTA)
+
+- **Architecture:** The same as above, with test-time augmentation applied during inference. TTA is a technique where multiple transformed versions of the same input (e.g. rotations, flips) are passed through the model at inference, and their predictions are aggregated (typically averaged) to produce a more stable final output.  
+- **The Goal:** Mitigate orientation sensitivity without modifying the underlying architecture, by enforcing approximate rotational invariance at inference time.
+- **The Method:** Each image is rotated into 15 distinct orientations, passed independently through the model, and the resulting predictions are averaged to produce a final classification.  
+- **The Result:** TTA substantially improves robustness and overall performance (F1: 81.74% → 87.20%, Accuracy: 84.89% → 89.98%), reducing orientation-induced variance. However, this comes at a significant computational cost (15× inference time) and remains a workaround rather than a principled architectural solution.
 
 ### Phase 2: The Intermediate Breakthrough (Custom 5-Layer G-CNN)
 * **Architecture:** A custom 5-layer feed-forward network built entirely from scratch in pure PyTorch.
