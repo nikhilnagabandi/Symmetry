@@ -130,4 +130,4 @@ While continuous steerable networks represent the absolute pinnacle of *convolut
 
 To break past the limitations of local convolutions, our team implemented a **Vision Transformer (ViT)** architecture to replace the sliding window paradigm entirely. By utilizing global self-attention, the ViT can capture long-range biological dependencies from the very first layer. 
 
-Early clinical benchmarking indicates that our ViT architecture strictly outperforms both the standard ResNet and the $D_4$ Steerable Network. **We will be publishing the complete ViT codebase, pre-trained weights, and the corresponding full-manifold robustness audits directly to this repository upon final validation.** Watch this repository for the upcoming release!
+Early clinical benchmarking indicates that our ViT architecture strictly outperforms both the standard ResNet and the $D_4$ Steerable Network. 
