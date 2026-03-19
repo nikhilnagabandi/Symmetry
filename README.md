@@ -69,12 +69,24 @@ To definitively prove the clinical necessity of geometric priors, we approached 
 ### Phase 2: The Intermediate Breakthrough (Custom 5-Layer G-CNN)
 * **Architecture:** A custom 5-layer feed-forward network built entirely from scratch in pure PyTorch.
 * **The Goal:** Prove that explicitly forcing the network to obey $D_4$ symmetries would solve the ResNet's instability. 
-* **The Internal Algorithm (Tensor Flow):** To achieve strict equivariance, we expanded the network's internal representations from standard 4D tensors to 5D topological tensors `[Batch, Channels, Group_Elements, Height, Width]`:
-  1. **The Input Space ($Z^2$):** Standard biopsy patches enter as `[B, 3, 96, 96]`.
-  2. **The Lifting Layer ($Z^2 \to D_4$):** A base filter is explicitly rotated and reflected 8 times before application, lifting the image into the $D_4$ group manifold. The tensor shape transforms to `[B, 16, 8, 96, 96]`.
-  3. **Group Convolutions ($D_4 \to D_4$):** Custom G-Conv layers (Layers 2-4) permute their internal weights to account for spatial rotations. The final convolutional tensor reaches `[B, 128, 8, 12, 12]`.
-  4. **The Invariance Bottleneck (Group Pooling):** To make a final binary diagnosis, the network applies a Max Pool across the 3rd dimension (the 8 group states), collapsing the manifold into a mathematically invariant state `[B, 128, 12, 12]`.
-  5. **Classification:** Standard spatial pooling maps the invariant features to the final binary output `[B, 2]`.
+* **The Internal Algorithm (Mathematical & Tensor Flow):** To achieve strict equivariance, we expanded the network's internal representations from standard 4D tensors to 5D topological tensors `[Batch, Channels, Group_Elements, Height, Width]`. The data flows through four distinct mathematical phases:
+  
+  1. **Layer 1 (The Lifting Layer): $Z^2 \to D_4$**
+     * *The Math:* Takes the flat 2D clinical image ($Z^2$) and projects it up into the 8-dimensional topological space of the dihedral group.
+     * *The Tensors:* Standard biopsy patches enter as `[B, 3, 96, 96]`. A base filter is explicitly rotated and reflected 8 times before application. The tensor shape transforms to `[B, 24, 8, 96, 96]`.
+  
+  2. **Layers 2, 3, 4, and 5 (Group Convolutions): $D_4 \to D_4$**
+     * *The Math:* These four layers keep the data strictly inside that 8-dimensional space. They extract deeper and deeper features (from basic edges to complex cancer textures) while mathematically shuffling the channels to maintain perfect rotational tracking.
+     * *The Tensors:* Custom G-Conv layers permute their internal weights to account for spatial rotations. The final convolutional tensor reaches `[B, 96, 8, 12, 12]`.
+  
+  3. **The Bottleneck (Group Pooling): $D_4 \to \text{Invariant Space}$**
+     * *The Math:* This is where the manifold collapses. By taking the maximum value across the 8 orientation channels, the network stops tracking *where* the rotation is and just outputs a definitive, invariant signal.
+     * *The Tensors:* To make a final binary diagnosis, the network applies a Max Pool across the 3rd dimension (the 8 group states), collapsing the tensor into a mathematically invariant state `[B, 96, 12, 12]`.
+  
+  4. **Final Output (Linear Classification): $\text{Invariant} \to \text{Binary Diagnosis}$**
+     * *The Math:* The fully connected layer translates that invariant signal into the final prediction.
+     * *The Tensors:* Standard spatial pooling (`AdaptiveAvgPool2d`) crushes the spatial dimensions, and a linear layer maps the invariant features to the final binary output `[B, 2]`.
+
 * **The Clinical Result (Subgroup Equivariance):** This intermediate step was highly successful but revealed a profound mathematical limitation of square pixel grids. It locked False Negatives and achieved a perfect **0.00% Flip Rate** for 180° rotations and horizontal/vertical flips. However, it still exhibited a **4.82% fluctuation** at 90° and 270° angles due to discrete tensor alignment. This perfectly proved the geometric prior works, but set the stage for a continuous solution.
 
 ### Phase 3: The Ultimate Solution (Steerable ESCNN)
