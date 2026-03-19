@@ -1,4 +1,4 @@
-# $D_4$ Equivariant Neural Networks for Clinical Histopathology
+# $D_4$ Rotation and Reflection Equivariant Neural Networks for Clinical Histopathology
 
 [![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](#)
 [![Open In Colab](https://img.shields.io/badge/Colab-F9AB00?style=for-the-badge&logo=googlecolab&color=525252)](#)
