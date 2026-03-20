@@ -95,6 +95,16 @@ To definitively prove the clinical necessity of geometric priors, we approached 
 * **The Mechanism:** Instead of manually rotating discrete filter grids (which caused the 4.82% artifact in Phase 2), Steerable CNNs parameterize their filters using **continuous circular harmonics**. By restricting the learned weights to a mathematically steerable basis, the network inherently understands $D_4$ symmetries at a sub-pixel level.
 * **The Result:** The ultimate architecture. It completely resolved the discrete grid problem to achieve a mathematically guaranteed **0.00% Flip Rate across the entire manifold**, alongside elite predictive power (0.9315 AUC) in just 5 epochs of training.
 
+### The Mathematics of Steerable Convolutions
+To understand how the Steerable CNN (ESCNN) entirely eliminated the 4.82% error found in the discrete G-CNN, we have to look at how it redefines the convolutional filter.
+
+* **The Interpolation Wall (Phase 2's Limit):** Discrete networks learn filters as rigid, square pixel matrices. Rotating a square grid by $90^\circ$ or $270^\circ$ forces the system to estimate sub-pixel values. This lossy interpolation creates a hard mathematical ceiling on diagnostic stability.
+* **Continuous Basis Functions:** The ESCNN abandons the discrete grid. Instead, it parameterizes its filters as a linear combination of continuous **circular harmonics** (smooth wave functions over the $SO(2)$ rotation group). A filter $f$ at a given radius $r$ and angle $\theta$ is defined by its angular frequency $m$:
+  $$f(r, \theta) = R(r) e^{i m \theta}$$
+* **Perfect Steerability via Phase Shift:** Because the filters are continuous mathematical functions, rotating them by an arbitrary angle $\alpha$ does not require physically moving pixels. The rotation is achieved through an exact analytic phase shift:
+  $$f(r, \theta - \alpha) = R(r) e^{i m (\theta - \alpha)} = e^{-i m \alpha} f(r, \theta)$$
+* **Bypassing the Grid:** The network calculates the rotated filter in continuous mathematical space *first*, and only then samples the resulting wave onto the discrete clinical image. By applying the rotation analytically before interacting with the pixel grid, the network completely bypasses interpolation loss, resulting in strict geometric safety.
+
 ## 4. Results & Clinical Evaluation
 
 To rigorously evaluate the clinical reliability of standard CNNs versus Steerable architectures, we audited all three models across the complete **$D_4$ Dihedral Manifold** (4 physical rotations + 4 physical reflections). 
