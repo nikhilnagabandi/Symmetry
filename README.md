@@ -1,9 +1,5 @@
 # Symmetry-Preserving Neural Networks for Computational Pathology
 
-[![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](#)
-[![Open In Colab](https://img.shields.io/badge/Colab-F9AB00?style=for-the-badge&logo=googlecolab&color=525252)](#)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](#)
-
 ## 1. Project Abstract
 
 While standard Convolutional Neural Networks (CNNs) like ResNet achieve high baseline accuracy on medical imaging tasks, they suffer from a fundamental architectural flaw: **a lack of intrinsic geometric memory**. In clinical histopathology, where tissue slides are arbitrarily rotated or flipped under a microscope, standard CNNs exhibit dangerous diagnostic instability, frequently altering their predictions based purely on spatial orientation.
