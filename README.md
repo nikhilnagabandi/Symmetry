@@ -183,6 +183,223 @@ If you are exploring the theory behind the equivariant models used in this repos
 
 ### Beyond CNN: The Vision Transformer (ViT)
 While continuous steerable networks represent the absolute pinnacle of *convolutional* safety, convolutions are still fundamentally restricted by their local receptive fields. Clinical histopathology often requires understanding global tissue context—for example, how a cluster of malignant cells in one corner of a slide relates to the surrounding stroma in another.
+ 
+ 
+## The Model: ViT-Tiny
+ 
+Unlike CNNs, ViT doesn't use convolutional filters at all. It splits the input image into a grid of patches, treats each patch as a token (like a word in a sentence), and processes the entire sequence through transformer layers using self-attention.
+ 
+Here's what that looks like concretely for our setup:
+ 
+| Spec | Value |
+|------|-------|
+| Total parameters | ~5.7M |
+| Transformer layers | 12 |
+| Attention heads | 3 |
+| Embedding dimension | 192 |
+| FFN hidden dimension | 768 |
+| Patch size | 16×16 pixels |
+| Input tokens | 37 (36 patches + 1 [CLS] token) |
+| Pretraining | ImageNet-21K |
+ 
+The [CLS] token is a special learnable token prepended to the sequence. Its job is to aggregate information from all patches through the attention layers, and it's the only token used for the final cancer/non-cancer prediction.
+ 
+**The rotation problem:** ViT's spatial awareness comes entirely from learned positional embeddings — there are no architectural inductive biases for position like there are in CNNs. Each grid position gets its own embedding vector. When the image is rotated, each patch lands at a different grid position and receives a different positional embedding than it had during training. The model learned specific content-position associations on unrotated images, and rotation breaks those associations.
+ 
+---
+ 
+## Experimental Design
+ 
+We ran four experiments varying two things: **how much of the model is trainable** and **what augmentation is applied during training**. Everything else was held constant.
+ 
+**Shared training config:**
+- Optimizer: Adam
+- LR schedule: Cosine Annealing (decays from initial LR to 0 over 6 epochs)
+- Batch size: 32
+- Loss: BCEWithLogitsLoss
+- Input: 96×96 native resolution (no resize)
+ 
+**D4 augmentation** (when used) applies `RandomChoice(0°/90°/180°/270°)` + `RandomHorizontalFlip` + `RandomVerticalFlip` + `ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.05)`. This covers all 8 symmetries of the dihedral group D₄.
+ 
+---
+ 
+## Results
+ 
+### Experiment A: Frozen Backbone — No Augmentation
+ 
+All 12 transformer blocks and embeddings are frozen. Only a single `Linear(192, 1)` head is trainable — **193 parameters**. Initial LR: 1e-3. No augmentation beyond normalization.
+ 
+**Confusion matrix (0° test set):**
+ 
+|  | Pred − | Pred + |
+|--|--------|--------|
+| **True −** | 11,454 | 1,637 |
+| **True +** | **2,026** | 6,886 |
+ 
+**Per-angle results:**
+ 
+| Angle | AUC | Accuracy | Recall | Flip Rate |
+|-------|-----|----------|--------|-----------|
+| 0° | 0.9082 | 0.8335 | 0.7727 | — |
+| 90° | 0.9084 | 0.8345 | 0.7791 | 9.03% |
+| 180° | 0.9073 | 0.8347 | 0.7773 | 8.60% |
+| 270° | 0.9083 | 0.8345 | 0.7776 | 9.24% |
+ 
+**Precision:** 0.8079 · **Specificity:** 0.8750 · **F1:** 0.8329 · **Avg Flip Rate:** 8.95%
+ 
+The rotation gap is essentially zero — AUC varies by only 0.0011 across all angles. But overall performance is weak. A recall of 0.77 means the model missed 2,026 out of 8,912 cancers. With only 193 trainable parameters, the model is fitting a simple linear boundary on frozen ImageNet features. It's not expressive enough to learn orientation-specific patterns, which is why it's rotationally stable — but it's also not expressive enough to be clinically useful.
+ 
+---
+ 
+### Experiment B: Frozen Backbone + D4 Augmentation
+ 
+Same architecture and frozen backbone as A, but training now includes D4 symmetry augmentation. Initial LR: 1e-3.
+ 
+**Confusion matrix (0° test set):**
+ 
+|  | Pred − | Pred + |
+|--|--------|--------|
+| **True −** | 10,902 | 2,189 |
+| **True +** | **1,846** | 7,066 |
+ 
+**Per-angle results:**
+ 
+| Angle | AUC | Accuracy | Recall | Flip Rate |
+|-------|-----|----------|--------|-----------|
+| 0° | 0.8933 | 0.8166 | 0.7929 | — |
+| 90° | 0.8955 | 0.8182 | 0.8046 | 10.07% |
+| 180° | 0.8939 | 0.8150 | 0.7968 | 9.75% |
+| 270° | 0.8945 | 0.8158 | 0.8012 | 9.95% |
+ 
+**Precision:** 0.7635 · **Specificity:** 0.8328 · **F1:** 0.8171 · **Avg Flip Rate:** 9.92%
+ 
+This is the worst-performing experiment. D4 augmentation actually *hurt* the model — AUC dropped from 0.9082 to 0.8933, precision fell from 0.8079 to 0.7635, and the flip rate went *up* from 8.95% to 9.92%.
+ 
+What happened? D4 augmentation presents each image in 8 different orientations during training. That's a much harder learning problem, and 193 parameters simply aren't enough to handle it. The augmentation added difficulty without adding capacity. Recall did tick up slightly (0.77 → 0.79), but at the cost of a lot more false positives.
+ 
+**Takeaway:** augmentation without capacity is counterproductive.
+ 
+---
+ 
+### Experiment C: Partial Fine-Tuning — Color Jitter Only
+ 
+Now we unfreeze the last 2 transformer blocks (10 and 11), the final LayerNorm, and replace the head with a deeper MLP: `Linear(192, 128) → ReLU → Dropout(0.3) → Linear(128, 1)`. That gives us **922,625 trainable parameters** — a 4,780× increase over the frozen experiments. Initial LR: 1e-4 (10× lower to avoid destabilizing pretrained weights). Augmentation is ColorJitter only — no spatial transforms.
+ 
+**Confusion matrix (0° test set):**
+ 
+|  | Pred − | Pred + |
+|--|--------|--------|
+| **True −** | 12,237 | 854 |
+| **True +** | **862** | 8,050 |
+ 
+**Per-angle results:**
+ 
+| Angle | AUC | Accuracy | Recall | Flip Rate |
+|-------|-----|----------|--------|-----------|
+| 0° | 0.9749 | 0.9220 | 0.9033 | — |
+| 90° | 0.9662 | 0.9091 | 0.8756 | 7.34% |
+| 180° | 0.9693 | 0.9158 | 0.8845 | 6.83% |
+| 270° | 0.9670 | 0.9091 | 0.8788 | 7.54% |
+ 
+**Precision:** 0.9041 · **Specificity:** 0.9348 · **F1:** 0.9220 · **Avg Flip Rate:** 7.24%
+ 
+This is a massive jump. AUC went from 0.908 to 0.975 (+7.4%), recall from 0.77 to 0.90, and missed cancers dropped from 2,026 to 862 — a 57% reduction. The model is now both detecting cancer well *and* avoiding false alarms (specificity 0.93).
+ 
+But the rotation gap came back. AUC at 90° (0.9662) is 0.87% lower than at 0° (0.9749). With enough capacity, the attention layers learned position-dependent features through the positional embeddings, and those features are disrupted by rotation.
+ 
+More concerning: the flip direction is asymmetric. At 90°, 912 predictions flipped from Cancer → Non-Cancer, but only 703 flipped the other way. Rotation is systematically biasing the model toward *missing cancers* — the most dangerous failure mode in a screening tool.
+ 
+---
+ 
+### Experiment D: Partial Fine-Tuning + D4 Augmentation
+ 
+Same architecture as C, but training now includes D4 symmetry augmentation before ColorJitter. Everything else identical.
+ 
+**Confusion matrix (0° test set):**
+ 
+|  | Pred − | Pred + |
+|--|--------|--------|
+| **True −** | 12,111 | 980 |
+| **True +** | **832** | 8,080 |
+ 
+**Per-angle results:**
+ 
+| Angle | AUC | Accuracy | Recall | Flip Rate |
+|-------|-----|----------|--------|-----------|
+| 0° | 0.9734 | 0.9176 | 0.9066 | — |
+| 90° | 0.9737 | 0.9201 | 0.9100 | 6.07% |
+| 180° | 0.9731 | 0.9193 | 0.9087 | 6.10% |
+| 270° | 0.9736 | 0.9189 | 0.9098 | 6.38% |
+ 
+**Precision:** 0.8918 · **Specificity:** 0.9251 · **F1:** 0.9193 · **Avg Flip Rate:** 6.18%
+ 
+This is the best overall result. The rotation gap is gone — AUC varies by only 0.0006 across all angles (compared to 0.0087 in Experiment C). The flip rate dropped from 7.24% to 6.18%. And critically, the flip direction is now balanced: at 90°, it's 665 Cancer→Non-Cancer vs 670 the other way. No more systematic bias toward missing cancers.
+ 
+The cost? AUC at 0° dipped slightly from 0.9749 to 0.9734 (−0.15%), and specificity dropped from 0.9348 to 0.9251 (slightly more false positives: 980 vs 854). But recall *improved* from 0.9033 to 0.9066, and missed cancers hit the absolute lowest at 832. That's a trade-off worth making.
+ 
+---
+ 
+## Comparative Summary
+ 
+| | A. Frozen | B. Frozen+D4 | C. Unfrozen | D. Unfrozen+D4 |
+|---|---|---|---|---|
+| **Trainable params** | 193 | 193 | 922,625 | 922,625 |
+| **AUC @ 0°** | 0.9082 | 0.8933 | **0.9749** | 0.9734 |
+| **AUC gap** | ~0% | ~0% | 0.87% | **~0%** |
+| **Recall** | 0.7727 | 0.7929 | 0.9033 | **0.9066** |
+| **Specificity** | 0.8750 | 0.8328 | **0.9348** | 0.9251 |
+| **Precision** | 0.8079 | 0.7635 | **0.9041** | 0.8918 |
+| **Missed cancers** | 2,026 | 1,846 | 862 | **832** |
+| **Avg flip rate** | 8.95% | 9.92% | 7.24% | **6.18%** |
+| **Flip direction (90°)** | 947 vs 1039 | 1020 vs 1195 | 912 vs 703 | **665 vs 670** |
+ 
+---
+ 
+## Key Findings
+ 
+**1. Capacity matters more than augmentation.** Going from 193 to 922K trainable parameters (A → C) improved AUC by 7.4%, recall by 17 percentage points, and cut missed cancers by 57%. In contrast, adding D4 augmentation to the frozen model (A → B) made things worse. Capacity sets the ceiling; augmentation refines within it.
+ 
+**2. D4 augmentation closes the rotation gap — but only with sufficient capacity.** On the unfrozen model (C → D), D4 reduced the AUC gap from 0.87% to ~0% and flip rate from 7.24% to 6.18%. On the frozen model (A → B), D4 *increased* the flip rate and *decreased* AUC. The lesson: don't throw augmentation at an underpowered model.
+ 
+**3. D4 fixed the flip direction imbalance.** Without D4 (Exp C), rotation at 90° caused 912 Cancer→Non-Cancer flips vs only 703 in the reverse — a 23% asymmetry biased toward missing cancers. With D4 (Exp D), this balanced to 665 vs 670 (0.7% asymmetry). In a screening context, this is the difference between a model that systematically misses cancers when rotated and one that fails symmetrically.
+ 
+**4. ViT is inherently more rotation-robust than ResNet.** Under comparable conditions (partial fine-tuning, color jitter only), ViT's rotation gap was 0.87% versus ResNet-18's 1.67% — roughly half. Self-attention gives every patch a global receptive field from layer 1, which partially compensates for positional embedding mismatch.
+ 
+**5. The accuracy–stability trade-off.** Our best ViT (Exp D) achieves the highest AUC (0.9734) and recall (90.66%) of any architecture tested, including ResNet-18, Custom G-CNN, and ESCNN. But ESCNN achieved a perfect 0.00% flip rate through built-in harmonic equivariance. ViT wins on accuracy; ESCNN wins on stability.
+ 
+---
+ 
+## Best Configuration
+ 
+**Experiment D (Unfrozen + D4):**
+ 
+| Metric | Value |
+|--------|-------|
+| AUC | 0.9734 |
+| Recall (Sensitivity) | 0.9066 |
+| Specificity | 0.9251 |
+| Precision | 0.8918 |
+| F1 Score | 0.9193 |
+| Missed Cancers | 832 / 8,912 (9.3%) |
+| Rotation Gap | ~0% |
+| Avg Flip Rate | 6.18% (balanced direction) |
+ 
+---
+ 
+## Notebooks
+ 
+| Notebook | Description |
+|----------|-------------|
+| `ViT_Frozen_no_augmentation.ipynb` | Experiment A — frozen backbone, no augmentation |
+| `ViT_Frozen_D4_augmentation.ipynb` | Experiment B — frozen backbone + D4 augmentation |
+| `ViT_UnFrozen_last_two_transformer_blocks_and_custom_head.ipynb` | Experiment C — partial fine-tuning, color jitter only |
+| `ViT_D4_augmentation.ipynb` | Experiment D — partial fine-tuning + D4 augmentation |
+ 
+---
+ 
+## Reference for ViT
+ 
+- Dosovitskiy, A. et al. (2020). *An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale.* arXiv:2010.11929.
 
 To break past the limitations of local convolutions, our team implemented a **Vision Transformer (ViT)** architecture to replace the sliding window paradigm entirely. By utilizing global self-attention, the ViT can capture long-range biological dependencies from the very first layer. 
 
