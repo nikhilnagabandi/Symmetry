@@ -183,6 +183,8 @@ If you are exploring the theory behind the equivariant models used in this repos
 
 ### Beyond CNN: The Vision Transformer (ViT)
 While continuous steerable networks represent the absolute pinnacle of *convolutional* safety, convolutions are still fundamentally restricted by their local receptive fields. Clinical histopathology often requires understanding global tissue context—for example, how a cluster of malignant cells in one corner of a slide relates to the surrounding stroma in another.
+
+To break past the limitations of local convolutions, our team implemented a **Vision Transformer (ViT)** architecture to replace the sliding window paradigm entirely. By utilizing global self-attention, the ViT can capture long-range biological dependencies from the very first layer. 
  
  
 ## The Model: ViT-Tiny
@@ -386,7 +388,7 @@ The cost? AUC at 0° dipped slightly from 0.9749 to 0.9734 (−0.15%), and speci
  
 ---
  
-## Notebooks
+## Notebooks organization for ViT
  
 | Notebook | Description |
 |----------|-------------|
@@ -401,6 +403,6 @@ The cost? AUC at 0° dipped slightly from 0.9749 to 0.9734 (−0.15%), and speci
  
 - Dosovitskiy, A. et al. (2020). *An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale.* arXiv:2010.11929.
 
-To break past the limitations of local convolutions, our team implemented a **Vision Transformer (ViT)** architecture to replace the sliding window paradigm entirely. By utilizing global self-attention, the ViT can capture long-range biological dependencies from the very first layer. 
 
-Early clinical benchmarking indicates that our ViT architecture strictly outperforms both the standard ResNet and the $D_4$ Steerable Network. 
+
+
