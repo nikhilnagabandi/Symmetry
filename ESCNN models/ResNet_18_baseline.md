@@ -1,3 +1,21 @@
+## The Dataset: PatchCamelyon (PCam)
+To audit the geometric stability of these architectures, we utilized the **PatchCamelyon (PCam)** dataset. 
+
+* **The Data:** 327,680 color images (96x96 pixels) extracted from histopathologic scans of breast cancer lymph node sections.
+* **The Objective:** Binary classification. The network must predict whether the central 32x32 pixel region contains at least one pixel of malignant tumor tissue.
+* **Why PCam?** In clinical pathology, tissue orientation is arbitrary. A malignant cell cluster remains malignant whether the slide is viewed at 0°, 90°, or upside down. PCam contains perfectly unoriented images, making it the ideal benchmark to test if a neural network possesses intrinsic geometric memory ($D_4$ symmetry) or if it relies on brittle, translation-only memorization.
+
+### Experimental Setup & Training Protocol
+To ensure a perfectly fair mathematical comparison between standard convolutions and $D_4$ group symmetries, all three architectures were subjected to the exact same rigorous training constraints:
+
+* **The Dataset:** PatchCamelyon (PCam): 327,680 unoriented breast cancer biopsy patches (96x96 pixels).
+* **The Objective:** Binary classification (predicting the presence of at least one malignant pixel in the central 32x32 region).
+* **The Constraint:** Training was strictly locked to **5 Epochs** for all three models. 
+
+By locking the training duration and data pipeline, the resulting metrics isolate the exact clinical value of **geometric priors** without the interference of longer training times.
+
+---
+
 ### Phase 1: The Baseline Vulnerability (Standard ResNet-18)
 * **Architecture:** An off-the-shelf ResNet-18, serving as the industry-standard CNN baseline.
 * **The Goal:** Establish a benchmark for predictive capacity on the PCam dataset and precisely quantify the geometric blindspot (rotational instability) of standard convolutions.
