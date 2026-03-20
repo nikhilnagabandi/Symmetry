@@ -151,7 +151,25 @@ This repository demonstrates a fundamental truth in computational pathology: **p
 By systematically upgrading the architecture, we isolated the exact mathematical bottlenecks causing this rotational fragility:
 * **The Discrete Grid Limitation:** Our intermediate Custom 5-Layer G-CNN successfully stabilized 180° rotations and reflections (achieving a 0.00% flip rate for those subgroups). However, it still exhibited a ~4.8% diagnostic fluctuation at 90° angles. This perfectly highlighted the fundamental limitation of applying discrete $D_4$ group operations to square $Z^2$ pixel grids, where 90° rotations inevitably introduce subtle interpolation artifacts.
 * **The Continuous Solution:** By upgrading to a continuous Steerable Network (ESCNN), we bypassed the discrete grid entirely. Using continuous circular harmonics, the ESCNN achieved a mathematically guaranteed **0.00% Flip Rate** across the entire spatial manifold. 
-* **The 5-Epoch Advantage:** Crucially, these results were achieved under a highly constrained 5-epoch training loop. Standard CNNs must brute-force learn rotational invariance by observing thousands of augmented examples over massive training cycles. By contrast, equivariant models inherently possess this geometric knowledge at initialization. Locking in superior clinical sensitivity (81.36%) and specificity (90.85%) in just 5 epochs proves that hardcoding structural symmetries produces models that are not only mathematically safer, but radically more data-efficient. 
+* **The 5-Epoch Advantage:** Crucially, these results were achieved under a highly constrained 5-epoch training loop. Standard CNNs must brute-force learn rotational invariance by observing thousands of augmented examples over massive training cycles. By contrast, equivariant models inherently possess this geometric knowledge at initialization. Locking in superior clinical sensitivity (81.36%) and specificity (90.85%) in just 5 epochs proves that hardcoding structural symmetries produces models that are not only mathematically safer, but radically more data-efficient.
+
+## References & Acknowledgements
+
+This project heavily utilizes the mathematical frameworks and PyTorch libraries pioneered by Taco Cohen, Max Welling, Maurice Weiler, Gabriele Cesa, and Leon Lang. Their foundational work on Group Equivariant and Steerable CNNs made the $D_4$ manifold audits in this repository possible.
+
+If you are exploring the theory behind the equivariant models used in this repository, please refer to their original papers:
+
+1. **Group Equivariant Convolutional Networks** *(The Foundation of Phase 2)*
+   * Cohen, T., & Welling, M. (2016). *International Conference on Machine Learning (ICML).*
+
+2. **Learning Steerable Filters for Rotation Equivariant CNNs** *(The Bridge to Continuous Math)*
+   * Weiler, M., Hamprecht, F. A., & Welling, M. (2018). *Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR).*
+
+3. **General E(2)-Equivariant Steerable CNNs** *(`e2cnn` Core Theory)*
+   * Weiler, M., & Cesa, G. (2019). *Conference on Neural Information Processing Systems (NeurIPS).*
+
+4. **A Program to Build E(N)-Equivariant Steerable CNNs** *(`escnn` Implementation for Phase 3)*
+   * Cesa, G., Lang, L., & Weiler, M. (2022). *International Conference on Learning Representations (ICLR).*
 
 ### Beyond CNN: The Vision Transformer (ViT)
 While continuous steerable networks represent the absolute pinnacle of *convolutional* safety, convolutions are still fundamentally restricted by their local receptive fields. Clinical histopathology often requires understanding global tissue context—for example, how a cluster of malignant cells in one corner of a slide relates to the surrounding stroma in another.
