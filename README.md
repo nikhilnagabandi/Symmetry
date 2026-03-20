@@ -153,7 +153,7 @@ Finally, we tested the absolute confidence of the models by searching for the cl
 
 **Analysis:** Hardcoding geometric priors does not just prevent rotational errors; it fundamentally improves feature separability and model calibration. The Steerable network retains highly functional probability scores even under heavily constrained, 5-epoch training loops, whereas standard CNNs suffer from total probability collapse when pushed to clinical sensitivity targets.
 
-## 8. Conclusion & The Next Frontier
+## 8. Conclusion for CNNs & The Next Frontier
 
 This repository demonstrates a fundamental truth in computational pathology: **predictive power means nothing without geometric stability.** By auditing a standard ResNet-18 across the $D_4$ manifold, we exposed a critical architectural flaw. The standard CNN's lack of intrinsic geometric memory caused it to miss over 1,200 additional cancers simply because a biopsy slide was physically rotated, rendering standard architectures clinically unsafe for deployable triage. 
 
@@ -163,7 +163,7 @@ By systematically upgrading the architecture, we isolated the exact mathematical
 * **The Continuous Solution:** By upgrading to a continuous Steerable Network (ESCNN), we bypassed the discrete grid entirely. Using continuous circular harmonics, the ESCNN achieved a mathematically guaranteed **0.00% Flip Rate** across the entire spatial manifold. 
 * **The 5-Epoch Advantage:** Crucially, these results were achieved under a highly constrained 5-epoch training loop. Standard CNNs must brute-force learn rotational invariance by observing thousands of augmented examples over massive training cycles. By contrast, equivariant models inherently possess this geometric knowledge at initialization. Locking in superior clinical sensitivity (81.36%) and specificity (90.85%) in just 5 epochs proves that hardcoding structural symmetries produces models that are not only mathematically safer, but radically more data-efficient.
 
-## References & Acknowledgements
+## References for CNNs & Acknowledgements
 
 This project heavily utilizes the mathematical frameworks and PyTorch libraries pioneered by Taco Cohen, Max Welling, Maurice Weiler, Gabriele Cesa, and Leon Lang. Their foundational work on Group Equivariant and Steerable CNNs made the $D_4$ manifold audits in this repository possible.
 
